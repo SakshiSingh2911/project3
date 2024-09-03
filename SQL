@@ -1,0 +1,269 @@
+SELECT
+Dishname AS
+DISHES_IN_R1
+FROM MENU, RESTAURANT
+WHERE Mrid = Rid AND Rid = 1;
+--2
+SELECT Ocid AS CUSTOMER_ID, COUNT(*) AS NUMBER_OF_ORDERS
+FROM ORDERS
+GROUP BY Ocid;
+--3
+/*ALTER TABLE APPLIES_ON DROP CONSTRAINT
+applies_on_acode_fkey;
+ALTER TABLE APPLIES_ON ADD CONSTRAINT
+applies_on_acode_fkey FOREIGN key (Acode) REFERENCES
+COUPON(Code) ON DELETE SET NULL;*/
+SELECT *
+FROM COUPON
+WHERE NOW() > Exp_date;
+--4
+SELECT Rid, Rname
+FROM RESTAURANT GROUP BY Rating;
+--5
+SELECT Oid_, Did, Dfname, Dlname
+FROM DELIVERY_PERSON, ORDER_
+WHERE Did = Odid;
+--c1
+ALTER TABLE DELIVERY_PERSON ADD COLUMN REMARKS
+VARCHAR(20);
+UPDATE DELIVERY_PERSON SET REMARKS =
+CASE
+WHEN Drating > 4 AND Drating <= 5 THEN 'EXPERT'
+WHEN Drating > 3 AND Drating <= 4 THEN 'PROFICIENT'
+WHEN Drating > 2 AND Drating <= 3 THEN 'COMPETENT'
+WHEN Drating > 1 AND Drating <= 2 THEN 'SATISFACTORY'
+WHEN Drating >= 0 AND Drating <= 1 THEN 'NOVICE'
+END;
+--C2
+SELECT fname AS customer_name, Cphone as customer_phone,
+CAddress as customer_address, Rname as restaurant_name,
+Rphone as restaurant_phone, Raddress as restaurant_address
+FROM (RESTAURANT JOIN (ORDER_ JOIN (CUSTOMER JOIN MAKES ON
+Cid = Mcid) ON Oid_ = Moid) ON Rid = Orid)
+WHERE Odid = 1;
+--c3
+SELECT Cid, Fname
+FROM CUSTOMER
+EXCEPT (SELECT Cid, FNAME FROM CUSTOMER, ORDERS WHERE Cid
+= Ocid);
+--C4
+SELECT Oid_, SUM(Iprice) as TOTAL_PRICE
+FROM ORDER_ JOIN ITEMS ON Oid_ = Ioid
+GROUP BY Oid_;
+--C5
+/*INSERT INTO CITEMS(Ciname, Ciprice)
+SELECT Dishname, Mprice
+FROM RESTAURANT JOIN MENU ON RID = MRID
+WHERE Rid = 1 AND Dishname = 'Veg Extravaganza', ; */
+CREATE OR REPLACE VIEW ORDER_TOTAL
+AS SELECT Oid_, SUM(Iprice) as TOTAL_PRICE
+FROM ORDER_ JOIN ITEMS ON Oid_ = Ioid
+GROUP BY Oid_;
+WITH TEMP(AVERAGE) AS
+(SELECT AVG(TOTAL_PRICE) FROM ORDER_TOTAL)
+ SELECT Oid_, TOTAL_PRICE
+ FROM ORDER_TOTAL, TEMP
+ WHERE ORDER_TOTAL.TOTAL_PRICE > TEMP.AVERAGE;
+ CREATE USER ADMIN WITH PASSWORD 'ADMIN' CREATEDB;
+--delivery person
+CREATE OR REPLACE VIEW DELIVERY1 AS
+SELECT fname AS customer_name, Cphone as customer_phone,
+CAddress as customer_address, Rname as restaurant_name,
+Rphone as restaurant_phone, Raddress as restaurant_address
+FROM (RESTAURANT JOIN (ORDER_ JOIN (CUSTOMER JOIN MAKES ON
+Cid = Mcid) ON Oid_ = Moid) ON Rid = Orid)
+WHERE Odid = 1;
+CREATE OR REPLACE VIEW DELIVERY2 AS
+SELECT fname AS customer_name, Cphone as customer_phone,
+CAddress as customer_address, Rname as restaurant_name,
+Rphone as restaurant_phone, Raddress as restaurant_address
+FROM (RESTAURANT JOIN (ORDER_ JOIN (CUSTOMER JOIN MAKES ON
+Cid = Mcid) ON Oid_ = Moid) ON Rid = Orid)
+WHERE Odid = 2;
+--customer
+CREATE or REPLACE VIEW customer1 as
+select fname, lname, cphone, CAddress, Email
+from customer
+where cid = 1;
+--RESTAURANT
+CREATE or REPLACE VIEW RESTAURANT1 as
+select Rname, Rphone, Cuisine, Raddress
+from RESTAURANT
+where Rid = 1;
+CREATE TABLE food(
+email varchar(50) PRIMARY KEY,
+password varchar(30) NOT NULL,
+customername varchar(50) NOT NULL,
+address varchar(60) NOT NULL,
+item VARCHAR(20) NOT NULL
+);
+
+INSERT INTO food(email,password,customername,address,item)
+VALUES
+('ramesh@gmail.com','hrishikesh13','Ramesh','Tamil Nadu', 'pastry),
+('abner@gmail.com','hrishikesh13','Ramesh','Tamil Nadu', 'pastry'),
+('ashu@gmail.com','12345','sheetal','hyderabad', 'choco chips'),
+('jatin@gmail.com','13','abhi','odisha', 'burger');
+Select * from food;
+CREATE TABLE COUPON (
+Code VARCHAR(12),
+Maxdisc INT NOT NULL,
+Exp_date TIMESTAMP NOT NULL,
+Minord INT NOT NULL,
+PRIMARY KEY (Code)
+);
+CREATE TABLE RESTAURANT (
+Rid INT,
+Rname VARCHAR(30) NOT NULL ,
+Rphone VARCHAR(12) NOT NULL UNIQUE,
+Raddress VARCHAR(200) NOT NULL UNIQUE,
+Cuisine VARCHAR(20) NOT NULL,
+Rating NUMERIC(2, 1),
+Main_rid INT,
+PRIMARY KEY (Rid),
+FOREIGN KEY (Main_rid) REFERENCES RESTAURANT(Rid)
+CREATE TABLE COUPONname (
+Code VARCHAR(12),
+Maxdisc INT NOT NULL,
+Exp_date TIMESTAMP NOT NULL,
+Minord INT NOT NULL,
+PRIMARY KEY (Code)
+)
+DML COMMANDS –
+Alter Table RESTAURANT drop constraint restaurant_main_rid_fkey;
+--add col in citems
+ALTER TABLE CITEMS ADD COLUMN ciqty int default 1;
+ALTER TABLE CART ADD COLUMN total_price float default 0;
+--triggers
+create function update_price() RETURNS trigger as $$ BEGIN
+UPDATE CART SET total_price = total_price + NEW.Ciprice * NEW.ciqty WHERE Cart_id =
+NEW.Ccart_id;
+RETURN NEW;
+END;
+$$
+LANGUAGE 'plpgsql';
+CREATE FUNCTION reduce_price() RETURNS trigger as $$
+BEGIN
+UPDATE CART SET total_price = total_price - OLD.Ciprice*OLD.ciqty WHERE Cart_id =
+OLD.Ccart_id;
+RETURN OLD;
+END;
+$$
+LANGUAGE 'plpgsql';
+-- Creating triggers
+CREATE TRIGGER insert_summary AFTER INSERT ON citems FOR EACH
+ROW
+EXECUTE PROCEDURE update_price();
+CREATE TRIGGER delete_summary BEFORE DELETE ON citems FOR
+EACH ROW
+EXECUTE PROCEDURE reduce_price();
+---MAIN TABLE INSERTIONS
+--coupon
+INSERT INTO COUPON VALUES('ugsdkabue',150,'2021-12-01 23:10:00',700);
+INSERT INTO COUPON VALUES('uhdfiugfa',100,'2021-12-01 23:10:00',500);
+INSERT INTO COUPON VALUES('ugsdkfhu9',50,'2021-12-01 23:10:00',300);
+INSERT INTO COUPON VALUES('ugsdrhyiq',120,'2021-12-01 23:10:00',700);
+--transaction
+INSERT INTO TRANSACTION_ VALUES(1,2000,'COD');
+INSERT INTO TRANSACTION_ VALUES(2,2500,'UPI');
+INSERT INTO TRANSACTION_ VALUES(3,3000,'UPI');
+INSERT INTO TRANSACTION_ VALUES(4,4000,'CARD');
+INSERT INTO TRANSACTION_ VALUES(5,1000,'UPI');
+--delivery person
+INSERT INTO DELIVERY_PERSON
+VALUES(0,'Dummy','Dummy','5','true',100.20,4.2,'Dummy');
+INSERT INTO DELIVERY_PERSON
+VALUES(6,'Geetha','Anand','9087965745','true',097.12,4.8,'J P Nagar,Bangalore');
+INSERT INTO DELIVERY_PERSON
+VALUES(7,'Adhitya','Suresh','9000965745','true',098.10,4.0,'Chruch Street,Bangalore');
+INSERT INTO DELIVERY_PERSON VALUES(8,'Rohan','K','9087992345','true',096.11,3.9,'J P
+Nagar,Bangalore');
+INSERT INTO DELIVERY_PERSON
+VALUES(9,'Keshav','Kumar','9087235745','true',097.12,4.5,'Netkallappa Circle,Bangalore');
+INSERT INTO DELIVERY_PERSON VALUES(10,'Ankush','S
+J','9087000745','true',099.04,4.6,'Whitefield,Bangalore');
+--customer
+INSERT INTO CUSTOMER VALUES(1,'Manognya','Singuru','1-467/56(4),2nd street,M G
+Road,Bangalore','9835678234','manogyna@gmail.com');
+INSERT INTO CUSTOMER VALUES(2,'Smriti','Tilak','123-38/45(13),5th
+cross,Basavangudi,Bangalore','9871237456','smruthi@gmail.com');
+INSERT INTO CUSTOMER VALUES(3,'Shruvi','D','1-105/18(15),1st main ,2nd
+cross,Maroli,Bangalore','6366298767','shruvi@gmail.com');
+INSERT INTO CUSTOMER VALUES(4,'Ross','Geller','2-908/23(45),4th
+cross,Malleshwaram,Bangalore','9807654321','ross@gmail.com');
+INSERT INTO CUSTOMER VALUES(5,'Monica','G','8-23/12(7),9th cross,H S R
+Layput,Bangalore','9807659321','monica@gmail.com');
+INSERT INTO CUSTOMER VALUES(6,'Rachel','Green','21-34/3(5),7th
+cross,Jayanagar,Bangalore','9437654321','rachel@gmail.com');
+INSERT INTO CUSTOMER VALUES(7,'Joey','Tribiyani','16-8/19(4),5th cross,J P
+Nagar,Bangalore','9807654987','joey@gmail.com');
+INSERT INTO CUSTOMER VALUES(8,'Chandler','Bing','9-8/3(16),8th
+cross,Whitefield,Bangalore','9065654321','chandler@gmail.com');
+INSERT INTO CUSTOMER VALUES(9,'Ramesh','shetty','1-906/25(15),1st
+cross,Nelamangala,Bangalore','9873456723','ramesh@gmail.com');
+INSERT INTO CUSTOMER VALUES(10,'arjun','Singh','12-89/5(1),5th cross,R R
+Nagar,Bangalore','9899956723','arjun@gmail.com');
+--RESTAURANT
+INSERT INTO RESTAURANT VALUES(1, 'Dominos', '9393939393',
+'Ground Floor, 183, Old Outer Ring Rd, opp. Bangalore Development Authority Complex, 3rd
+Block, BDA Layout, 2nd Block, Naagarabhaavi, Bengaluru, Karnataka 560072',
+'Italian', 4.0, 1);
+INSERT INTO RESTAURANT VALUES(2, 'Dominos', '9393939392',
+'Kemapura Dakale (Agrahara), XXI division, Bangalore city corporation, Nagarabhavi Main Rd,
+Govindaraja Nagar Ward, Prashant Nagar, Vijayanagar, Bengaluru, Karnataka 560079',
+'Italian', 3.9, 1);
+INSERT INTO RESTAURANT VALUES(3, 'Meghana Foods', '9393456921',
+'52, 1st Floor, 33rd Cross Rd, near Cafe Coffee Day, 4th Block, Jayanagar, Bengaluru, Karnataka
+560011',
+'Andhra style', 4.3, 3);
+INSERT INTO RESTAURANT VALUES(4, 'Meghana Foods', '9393456969',
+'1st Cross Road, 124, 1st A Cross Rd, near Jyoti Nivas College, KHB Colony, 5th Block,
+Koramangala, Bengaluru, Karnataka 560095',
+'Andhra style', 4.1, 3);
+INSERT INTO MENU VALUES('Brownie Fantasy', 1, 59, 'Dessert', 'Sweet Temptation! Hot
+Chocolate Brownie drizzled with chocolate fudge sauce');
+INSERT INTO MENU VALUES('Pepsi(500 mL)', 1, 60, 'Beverages', 'Sparkling and Refreshing
+Beverage');
+INSERT INTO MENU VALUES('Margherita Pizza', 2, 99, 'Main Course', 'Classic delight with
+100% real mozzarella cheese');
+INSERT INTO MENU VALUES('Veg Extravaganza', 2, 249, 'Main Course', 'Black olives,
+capsicum, onion, grilled mushroom, corn, tomato, jalapeno & extra cheese');
+INSERT INTO MENU VALUES('Cheese n Corn', 2, 169, 'Main Course', 'A delectable combination
+of sweet & juicy golden corn');
+INSERT INTO MENU VALUES('Potato Cheese Shots', 2, 70, 'Appetizer', 'Crisp and golden
+INSERT INTO MENU VALUES('Sweet Mango Lassi', 9, 89, 'Beverages', 'Mango lassi made with
+100% natural mango pulp');
+INSERT INTO MENU VALUES('Masala Butter Milk', 9, 79, 'Beverages', 'Spicy chilled
+buttermilk');
+INSERT INTO ORDER_ VALUES(1, 2, 3);
+INSERT INTO ORDER_ VALUES(2, 1, 3);
+INSERT INTO ORDER_ VALUES(3, 7, 1);
+INSERT INTO ORDER_ VALUES(4, 5, 2);
+INSERT INTO ORDER_ VALUES(5, 4, 5);
+INSERT INTO ITEMS VALUES('Chilly Gobi', 245, 1);
+INSERT INTO ITEMS VALUES('Jeera Rice', 190, 1);
+INSERT INTO ITEMS VALUES('Vanilla Icecream', 40, 2);
+INSERT INTO ITEMS VALUES('Margherita Pizza', 99, 3);
+--ORDERS
+INSERT INTO ORDERS VALUES(1, 5);
+INSERT INTO ORDERS VALUES(2, 6);
+INSERT INTO ORDERS VALUES(2, 1);
+UPDATE RESTAURANT SET rpassword = 'r1' WHERE rid = 1;
+UPDATE RESTAURANT SET rpassword = 'r2' WHERE rid = 2;
+UPDATE RESTAURANT SET rpassword = 'r3' WHERE rid = 3;
+UPDATE RESTAURANT SET rpassword = 'r9' WHERE rid = 9;
+ALTER TABLE ITEMS ADD COLUMN iqty int default 1;
+ALTER TABLE RESTAURANT ADD COLUMN rreviews int default 1;
+ALTER TABLE DELIVERY_PERSON ADD COLUMN dreviews int default 1;
+--add review column
+ALTER TABLE DELIVERY_PERSON ADD COLUMN REMARKS VARCHAR(20);
+UPDATE DELIVERY_PERSON SET REMARKS =
+CASE
+WHEN Drating > 4 AND Drating <= 5 THEN 'EXPERT'
+WHEN Drating > 3 AND Drating <= 4 THEN 'PROFICIENT'
+WHEN Drating > 2 AND Drating <= 3 THEN 'COMPETENT'
+WHEN Drating > 1 AND Drating <= 2 THEN 'SATISFACTORY'
+WHEN Drating >= 0 AND Drating <= 1 THEN 'NOVICE'
+END;
+Alter Table RESTAURANT add constraint restaurant_main_rid_fkey FOREIGN KEY (Main_rid)
+REFERENCES RESTAURANT(Rid);
